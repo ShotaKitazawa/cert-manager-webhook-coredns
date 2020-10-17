@@ -13,7 +13,7 @@ certManager:
   serviceAccountName: cert-manager
 
 image:
-  repository: mycompany/webhook-image
+  repository: kanatakita/cert-manager-webhook-coredns
   tag: latest
   pullPolicy: IfNotPresent
 

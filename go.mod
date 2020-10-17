@@ -14,7 +14,4 @@ require (
 	sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06 // indirect
 )
 
-replace (
-	google.golang.org/grpc => google.golang.org/grpc v1.26.0
-)
-
+replace google.golang.org/grpc => google.golang.org/grpc v1.26.0

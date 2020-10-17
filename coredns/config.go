@@ -24,6 +24,7 @@ import (
 // resource and fetch these credentials using a Kubernetes clientset.
 type Config struct {
 	Endpoint            string                 `json:"endpoint"`
+	Path                string                 `json:"path"`
 	Username            string                 `json:"username"`
 	Password            string                 `json:"password"`
 	CaCertSecretRef     apis.SecretKeySelector `json:"caCertSecretRef"`

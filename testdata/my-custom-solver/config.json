@@ -1,1 +1,4 @@
-{}
+{
+  "endpoint": "http://192.168.0.11:2379",
+  "path": "/external"
+}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jetstack/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"go.etcd.io/etcd/clientv3"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog"
 )
@@ -16,13 +17,7 @@ import (
 // To do so, it must implement the `github.com/jetstack/cert-manager/pkg/acme/webhook.Solver`
 // interface.
 type CustomDNSProviderSolver struct {
-	// If a Kubernetes 'clientset' is needed, you must:
-	// 1. uncomment the additional `client` field in this structure below
-	// 2. uncomment the "k8s.io/client-go/kubernetes" import at the top of the file
-	// 3. uncomment the relevant code in the Initialize method below
-	// 4. ensure your webhook's service account has the required RBAC role
-	//    assigned to it for interacting with the Kubernetes APIs you need.
-	//client kubernetes.Clientset
+	client *kubernetes.Clientset
 }
 
 // Name is used as the name for this DNS solver when referencing it on the ACME
@@ -61,7 +56,9 @@ func (c *CustomDNSProviderSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 	if err != nil {
 		return fmt.Errorf("unable to check TXT record: %v", err)
 	}
-	if _, err := client.Put(context.Background(), fmt.Sprintf("_acme_challenge.%s", ch.ResolvedZone), fmt.Sprintf(`{"text": "%s"}`, ch.Key)); err != nil {
+
+	path := getCoreDNSPath(ch.ResolvedFQDN, cfg.Path, []string{"_acme_challenge"})
+	if _, err := client.Put(context.Background(), path, fmt.Sprintf(`{"text": "%s"}`, ch.Key)); err != nil {
 		return fmt.Errorf("unable to put TXT record: %v", err)
 	}
 
@@ -93,11 +90,11 @@ func (c *CustomDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 	if err != nil {
 		return fmt.Errorf("unable to check TXT record: %v", err)
 	}
-	if _, err := client.Delete(context.Background(), fmt.Sprintf("_acme_challenge.%s", ch.ResolvedZone)); err != nil {
+
+	path := getCoreDNSPath(ch.ResolvedFQDN, cfg.Path, []string{"_acme_challenge"})
+	if _, err := client.Delete(context.Background(), path); err != nil {
 		return fmt.Errorf("unable to remove TXT record: %v", err)
 	}
-
-	return nil
 
 	return nil
 }
@@ -112,16 +109,12 @@ func (c *CustomDNSProviderSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 // The stopCh can be used to handle early termination of the webhook, in cases
 // where a SIGTERM or similar signal is sent to the webhook process.
 func (c *CustomDNSProviderSolver) Initialize(kubeClientConfig *rest.Config, stopCh <-chan struct{}) error {
-	///// UNCOMMENT THE BELOW CODE TO MAKE A KUBERNETES CLIENTSET AVAILABLE TO
-	///// YOUR CUSTOM DNS PROVIDER
+	klog.V(6).Infof("call function Initialize")
+	cl, err := kubernetes.NewForConfig(kubeClientConfig)
+	if err != nil {
+		return err
+	}
 
-	//cl, err := kubernetes.NewForConfig(kubeClientConfig)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//c.client = cl
-
-	///// END OF CODE TO MAKE KUBERNETES CLIENTSET AVAILABLE
+	c.client = cl
 	return nil
 }
